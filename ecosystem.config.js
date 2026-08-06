@@ -4,9 +4,10 @@ module.exports = {
       name: "control-gastos",
       script: "node_modules/next/dist/bin/next",
       args: "start",
+      exec_mode: "fork",
       env_production: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 3001,
       },
       instances: 1,
       autorestart: true,

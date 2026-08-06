@@ -255,7 +255,7 @@ server {
 
     # Proyecto Control de Gastos (Next.js)
     location /controlgastos/ {
-        proxy_pass http://127.0.0.1:3000/controlgastos/;
+        proxy_pass http://127.0.0.1:3001/controlgastos/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
