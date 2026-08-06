@@ -172,9 +172,9 @@ sudo npm install -g pm2
 ```sql
 sudo mysql -u root -p
 
-CREATE DATABASE control_gastos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'gastos_user'@'localhost' IDENTIFIED BY 'TU_PASSWORD_SEGURO';
-GRANT ALL PRIVILEGES ON control_gastos.* TO 'gastos_user'@'localhost';
+CREATE DATABASE control_gastos_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'control_user'@'localhost' IDENTIFIED BY 'c0ntr0l_g4st0s!';
+GRANT ALL PRIVILEGES ON control_gastos_db.* TO 'control_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```

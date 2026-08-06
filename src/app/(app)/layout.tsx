@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({
   children,
 }: {
