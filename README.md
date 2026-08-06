@@ -141,6 +141,137 @@ ControlGastos/
 │   ├── components/     # Componentes de UI reutilizables
 │   └── lib/            # Configuraciones (Prisma client, Auth, etc.)
 ├── .env.local.example  # Plantilla de variables de entorno
+├── ecosystem.config.js # Configuración PM2 para producción
+├── next.config.ts      # Configuración de Next.js (con soporte de basePath)
 ├── package.json
 └── README.md
 ```
+
+---
+
+## 🌐 Despliegue en Servidor VPS (Producción)
+
+A continuación se detalla la guía paso a paso para desplegar la aplicación en un servidor Linux (Ubuntu/Debian) usando **Node.js**, **PM2**, **MySQL** y **Nginx** (con soporte para subrutas o convivencia con otros sitios como Angular).
+
+### 1. Prerrequisitos en el VPS
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git nginx certbot python3-certbot-nginx mysql-server
+
+# Instalar Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Instalar PM2 globalmente
+sudo npm install -g pm2
+```
+
+---
+
+### 2. Configurar la Base de Datos MySQL
+```sql
+sudo mysql -u root -p
+
+CREATE DATABASE control_gastos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'gastos_user'@'localhost' IDENTIFIED BY 'TU_PASSWORD_SEGURO';
+GRANT ALL PRIVILEGES ON control_gastos.* TO 'gastos_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+---
+
+### 3. Clonar y Configurar la Aplicación
+```bash
+cd /var/www
+git clone https://github.com/luisrs-dev/Control-de-gastos.git
+cd Control-de-gastos
+npm install
+```
+
+Crear el archivo `.env` en producción:
+```bash
+nano .env
+```
+
+```env
+# ─── Base de Datos ────────────────────────────────────────────────────────────
+DATABASE_URL="mysql://gastos_user:TU_PASSWORD_SEGURO@localhost:3306/control_gastos"
+
+# ─── Configuración de Subruta (Opcional, ej: http://31.97.9.216/controlgastos) ─
+NEXT_PUBLIC_BASE_PATH="/controlgastos"
+NEXTAUTH_URL="http://31.97.9.216/controlgastos"
+
+# ─── Auth.js v5 ───────────────────────────────────────────────────────────────
+AUTH_SECRET="tu_secret_de_produccion_aqui"
+AUTH_TRUST_HOST=true
+
+# ─── Integraciones ────────────────────────────────────────────────────────────
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_XXXXXXXXXXXXXXXX"
+GOOGLE_GENERATIVE_AI_API_KEY="AIzaXXXXXXXXXXXXXXXXXXXXXXXXXX"
+```
+
+Migrar base de datos y compilar:
+```bash
+npx prisma db push
+npm run db:seed
+npm run build
+```
+
+---
+
+### 4. Levantar con PM2 (`ecosystem.config.js`)
+El proyecto incluye un archivo `ecosystem.config.js` optimizado para PM2:
+
+```bash
+# Iniciar la app por primera vez
+pm2 start ecosystem.config.js --env production
+
+# Guardar la lista de procesos para reinicios del VPS
+pm2 save
+pm2 startup
+```
+
+Para reiniciar la aplicación tras futuros cambios (`git pull && npm run build`):
+```bash
+pm2 restart control-gastos
+```
+
+---
+
+### 5. Configurar Nginx (Convivencia con otros proyectos)
+
+Abre el archivo de configuración de Nginx (ej: `/etc/nginx/sites-available/default`):
+
+```nginx
+server {
+    listen 80;
+    server_name 31.97.9.216; # o tudominio.com
+
+    # Proyecto existente (ej. Angular)
+    location /joseluisjara/ {
+        # ... configuración existente de Angular ...
+    }
+
+    # Proyecto Control de Gastos (Next.js)
+    location /controlgastos/ {
+        proxy_pass http://127.0.0.1:3000/controlgastos/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    client_max_body_size 10M;
+}
+```
+
+Recargar Nginx:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
