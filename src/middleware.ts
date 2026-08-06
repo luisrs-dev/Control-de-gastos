@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 
+const { auth } = NextAuth(authConfig);
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default auth((req) => {
