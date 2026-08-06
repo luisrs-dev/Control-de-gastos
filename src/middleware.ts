@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 
-const { auth } = NextAuth(authConfig);
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
@@ -14,7 +14,7 @@ export default auth((req) => {
   if (pathname.startsWith("/login")) {
     if (isAuthenticated) {
       const redirectTo =
-        userRole === "ADMIN" ? "/admin" : "/dashboard";
+        userRole === "ADMIN" ? `${basePath}/admin` : `${basePath}/dashboard`;
       return NextResponse.redirect(new URL(redirectTo, req.url));
     }
     return NextResponse.next();
@@ -22,7 +22,7 @@ export default auth((req) => {
 
   // All other routes require authentication
   if (!isAuthenticated) {
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL(`${basePath}/login`, req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -30,7 +30,7 @@ export default auth((req) => {
   // Admin-only routes
   if (pathname.startsWith("/admin")) {
     if (userRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL(`${basePath}/dashboard`, req.url));
     }
   }
 
