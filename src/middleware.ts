@@ -6,7 +6,12 @@ const { auth } = NextAuth(authConfig);
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
+  const rawPathname = req.nextUrl.pathname;
+  const pathname =
+    basePath && rawPathname.startsWith(basePath)
+      ? rawPathname.slice(basePath.length) || "/"
+      : rawPathname;
+
   const session = req.auth;
   const isAuthenticated = !!session;
   const userRole = session?.user?.role;
@@ -24,7 +29,7 @@ export default auth((req) => {
   // All other routes require authentication
   if (!isAuthenticated) {
     const loginUrl = new URL(`${basePath}/login`, req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("callbackUrl", rawPathname);
     return NextResponse.redirect(loginUrl);
   }
 
