@@ -1,9 +1,12 @@
 import type { NextAuthConfig } from "next-auth";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 export const authConfig = {
+  basePath: `${basePath}/api/auth`,
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login",
+    signIn: `${basePath}/login`,
   },
   providers: [],
   callbacks: {

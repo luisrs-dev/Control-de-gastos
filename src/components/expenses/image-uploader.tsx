@@ -48,7 +48,9 @@ export function ImageUploader({
         const formData = new FormData();
         formData.append("file", file);
 
-        const uploadRes = await fetch("/api/upload", {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+        const uploadRes = await fetch(`${basePath}/api/upload`, {
           method: "POST",
           body: formData,
         });

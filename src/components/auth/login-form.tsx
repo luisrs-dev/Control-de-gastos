@@ -30,6 +30,8 @@ export function LoginForm() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = async (data: FormData) => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
     const result = await signIn("credentials", {
       email: data.email,
       password: data.password,
@@ -42,12 +44,12 @@ export function LoginForm() {
     }
 
     // Fetch session to get role for redirect
-    const sessionRes = await fetch("/api/auth/session");
+    const sessionRes = await fetch(`${basePath}/api/auth/session`);
     const session = await sessionRes.json();
     const role = session?.user?.role;
 
     toast.success("¡Bienvenido!");
-    router.push(role === "ADMIN" ? "/admin" : "/dashboard");
+    router.push(role === "ADMIN" ? `${basePath}/admin` : `${basePath}/dashboard`);
     router.refresh();
   };
 
