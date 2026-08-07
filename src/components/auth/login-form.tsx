@@ -49,7 +49,7 @@ export function LoginForm() {
     const role = session?.user?.role;
 
     toast.success("¡Bienvenido!");
-    router.push(role === "ADMIN" ? `${basePath}/admin` : `${basePath}/dashboard`);
+    router.push(role === "ADMIN" ? "/admin" : "/dashboard");
     router.refresh();
   };
 

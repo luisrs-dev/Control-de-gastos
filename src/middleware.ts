@@ -19,16 +19,15 @@ export default auth((req) => {
   // Public routes — allow without auth
   if (pathname.startsWith("/login")) {
     if (isAuthenticated) {
-      const redirectTo =
-        userRole === "ADMIN" ? `${basePath}/admin` : `${basePath}/dashboard`;
-      return NextResponse.redirect(new URL(redirectTo, req.url));
+      const redirectTo = userRole === "ADMIN" ? "/admin" : "/dashboard";
+      return NextResponse.redirect(new URL(redirectTo, req.nextUrl));
     }
     return NextResponse.next();
   }
 
   // All other routes require authentication
   if (!isAuthenticated) {
-    const loginUrl = new URL(`${basePath}/login`, req.url);
+    const loginUrl = new URL("/login", req.nextUrl);
     loginUrl.searchParams.set("callbackUrl", rawPathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -36,7 +35,7 @@ export default auth((req) => {
   // Admin-only routes
   if (pathname.startsWith("/admin")) {
     if (userRole !== "ADMIN") {
-      return NextResponse.redirect(new URL(`${basePath}/dashboard`, req.url));
+      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
     }
   }
 
