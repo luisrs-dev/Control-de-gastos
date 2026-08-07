@@ -17,6 +17,8 @@ export const metadata: Metadata = {
     "Sistema de gestión de gastos por centro de costo con escaneo de comprobantes con IA.",
 };
 
+import { SessionProvider } from "@/components/providers/session-provider";
+
 export default function RootLayout({
   children,
 }: {
@@ -25,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+        <SessionProvider>
+          {children}
+        </SessionProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>
