@@ -4,7 +4,11 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { auth } from "@/lib/auth";
 import type { AiExtractedData } from "@/types";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+import fs from "fs";
+import path from "path";
+
+const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const responseSchema = {
   type: SchemaType.OBJECT,
@@ -37,6 +41,13 @@ export async function analyzeExpenseImage(
   const session = await auth();
   if (!session) return { error: "No autorizado" };
 
+  if (!genAI) {
+    return {
+      error:
+        "Clave de API de Gemini no configurada (GOOGLE_GENERATIVE_AI_API_KEY). Completa los datos manualmente.",
+    };
+  }
+
   try {
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
@@ -46,13 +57,34 @@ export async function analyzeExpenseImage(
       },
     });
 
-    // Fetch the image and convert to base64
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) throw new Error("Could not fetch image");
+    let base64Image = "";
+    let mimeType = "image/jpeg";
 
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString("base64");
-    const mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
+    if (imageUrl.startsWith("/")) {
+      // Local image stored in public/
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const relativePath =
+        basePath && imageUrl.startsWith(basePath)
+          ? imageUrl.slice(basePath.length)
+          : imageUrl;
+
+      const localFilePath = path.join(process.cwd(), "public", relativePath);
+      const fileBuffer = fs.readFileSync(localFilePath);
+      base64Image = fileBuffer.toString("base64");
+
+      const ext = path.extname(localFilePath).toLowerCase();
+      if (ext === ".png") mimeType = "image/png";
+      else if (ext === ".webp") mimeType = "image/webp";
+      else if (ext === ".heic") mimeType = "image/heic";
+    } else {
+      // Remote URL
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) throw new Error("Could not fetch image");
+
+      const imageBuffer = await imageResponse.arrayBuffer();
+      base64Image = Buffer.from(imageBuffer).toString("base64");
+      mimeType = imageResponse.headers.get("content-type") || "image/jpeg";
+    }
 
     const prompt = `Analiza esta imagen de un comprobante de compra (boleta, factura, ticket o voucher) y extrae la siguiente información:
     
