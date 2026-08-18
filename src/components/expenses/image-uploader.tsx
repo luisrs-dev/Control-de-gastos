@@ -118,7 +118,7 @@ export function ImageUploader({
             width={400}
             height={300}
             className="w-full h-48 object-cover"
-            unoptimized={preview.startsWith("blob:")}
+            unoptimized={preview.startsWith("blob:") || preview.startsWith("/")}
           />
 
           {/* Status overlay */}

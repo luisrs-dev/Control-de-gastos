@@ -76,6 +76,7 @@ export default async function MyExpensesPage({
                       alt={`Comprobante de ${expense.merchant}`}
                       width={56}
                       height={56}
+                      unoptimized={expense.imageUrl.startsWith("/")}
                       className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[var(--border)]"
                     />
                   ) : (
@@ -145,6 +146,7 @@ export default async function MyExpensesPage({
                           alt="Comprobante"
                           width={40}
                           height={40}
+                          unoptimized={expense.imageUrl.startsWith("/")}
                           className="w-10 h-10 rounded-lg object-cover border border-[var(--border)]"
                         />
                       ) : (

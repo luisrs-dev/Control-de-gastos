@@ -96,6 +96,7 @@ export default async function AdminExpenseDetailPage({
                   alt={`Comprobante de ${expense.merchant}`}
                   width={1200}
                   height={900}
+                  unoptimized={expense.imageUrl.startsWith("/")}
                   className="w-full h-auto object-contain"
                   priority
                 />

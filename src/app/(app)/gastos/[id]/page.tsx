@@ -42,6 +42,7 @@ export default async function ExpenseDetailPage({
                   alt={`Comprobante de ${expense.merchant}`}
                   width={800}
                   height={600}
+                  unoptimized={expense.imageUrl.startsWith("/")}
                   className="w-full object-contain max-h-[70vh]"
                   priority
                 />
