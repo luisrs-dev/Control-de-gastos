@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 // ─── Cost Centers ─────────────────────────────────────────────────────────────
 export async function getCostCenters(includeInactive = false) {
@@ -162,29 +163,52 @@ export async function toggleUserStatus(userId: string, status: "ACTIVE" | "INACT
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") return { error: "No autorizado" };
 
-  await prisma.user.update({ where: { id: userId }, data: { status } });
-  revalidatePath("/admin/usuarios");
-  return { success: true };
+  if (session.user.id === userId && status === "INACTIVE") {
+    return { error: "No puedes desactivar tu propia cuenta." };
+  }
+
+  try {
+    await prisma.user.update({ where: { id: userId }, data: { status } });
+    revalidatePath("/admin/usuarios");
+    return { success: true };
+  } catch {
+    return { error: "No se pudo actualizar el estado del usuario." };
+  }
 }
 
-export async function createUser(data: {
-  name: string;
-  email: string;
-  password: string;
-  role: "ADMIN" | "USER";
-}) {
+const createUserSchema = z.object({
+  name: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(100),
+  email: z.string().trim().toLowerCase().email("Ingresa un email válido."),
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres.")
+    .regex(/[a-z]/, "La contraseña debe incluir una letra minúscula.")
+    .regex(/[A-Z]/, "La contraseña debe incluir una letra mayúscula.")
+    .regex(/[0-9]/, "La contraseña debe incluir un número."),
+  role: z.enum(["ADMIN", "USER"], { message: "Selecciona un rol válido." }),
+});
+
+export async function createUser(data: z.infer<typeof createUserSchema>) {
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") return { error: "No autorizado" };
 
-  const bcrypt = await import("bcryptjs");
-  const hashedPassword = await bcrypt.hash(data.password, 12);
+  const parsed = createUserSchema.safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   try {
-    await prisma.user.create({
-      data: { ...data, password: hashedPassword },
+    const bcrypt = await import("bcryptjs");
+    const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
+    const user = await prisma.user.create({
+      data: {
+        name: parsed.data.name,
+        email: parsed.data.email,
+        password: hashedPassword,
+        role: parsed.data.role,
+      },
+      select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
     });
     revalidatePath("/admin/usuarios");
-    return { success: true };
+    return { success: true, user };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { error: "Ya existe un usuario con ese email." };
