@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ImageIcon, Calendar, Store, Banknote, Tag, FileText } from "lucide-react";
 import type { Metadata } from "next";
+import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
 
 export const metadata: Metadata = { title: "Detalle del Gasto" };
 
@@ -91,6 +92,13 @@ export default async function ExpenseDetailPage({
                 <DetailRow icon={FileText} label="Notas" value={expense.notes} />
               )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/gastos/${expense.id}/editar`}>Editar gasto</Link>
+            </Button>
+            <DeleteExpenseButton expenseId={expense.id} redirectPath="/gastos" />
           </div>
 
           {/* AI Data (if available) */}

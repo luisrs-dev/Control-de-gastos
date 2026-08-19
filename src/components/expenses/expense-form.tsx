@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUploader } from "@/components/expenses/image-uploader";
-import { createExpense } from "@/actions/expense.actions";
+import { createExpense, updateExpense } from "@/actions/expense.actions";
 import { expenseTypeLabel } from "@/lib/utils";
 import type { CostCenter, AiExtractedData } from "@/types";
 
@@ -36,9 +36,16 @@ type FormData = z.infer<typeof schema>;
 interface ExpenseFormProps {
   costCenters: CostCenter[];
   redirectPath?: string;
+  expenseId?: string;
+  initialData?: FormData;
 }
 
-export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFormProps) {
+export function ExpenseForm({
+  costCenters,
+  redirectPath = "/gastos",
+  expenseId,
+  initialData,
+}: ExpenseFormProps) {
   const router = useRouter();
 
   const {
@@ -49,7 +56,7 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema) as any,
-    defaultValues: {
+    defaultValues: initialData ?? {
       expenseType: "RECEIPT",
       date: new Date().toISOString().split("T")[0],
     },
@@ -72,12 +79,14 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
   };
 
   const onSubmit = async (data: FormData) => {
-    const result = await createExpense(data);
+    const result = expenseId
+      ? await updateExpense(expenseId, data)
+      : await createExpense(data);
     if (result.error) {
       toast.error(result.error);
       return;
     }
-    toast.success("✅ Gasto registrado exitosamente");
+    toast.success(expenseId ? "Gasto actualizado correctamente" : "Gasto registrado exitosamente");
     router.push(redirectPath);
   };
 
@@ -93,6 +102,7 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
         <ImageUploader
           onImageUploaded={handleImageUploaded}
           onAiDataExtracted={handleAiData}
+          currentImageUrl={initialData?.imageUrl}
         />
       </div>
 
@@ -244,7 +254,7 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
         ) : (
           <Save className="w-5 h-5 mr-2" />
         )}
-        {isSubmitting ? "Guardando..." : "Guardar Gasto"}
+        {isSubmitting ? "Guardando..." : expenseId ? "Actualizar Gasto" : "Guardar Gasto"}
       </Button>
     </form>
   );

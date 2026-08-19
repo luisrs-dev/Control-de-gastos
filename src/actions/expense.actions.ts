@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const createExpenseSchema = z.object({
   amount: z.coerce.number().positive("El monto debe ser mayor a 0"),
@@ -78,6 +80,10 @@ export async function updateExpense(id: string, data: Partial<CreateExpenseInput
   const session = await auth();
   if (!session) return { error: "No autorizado" };
 
+  const parsed = createExpenseSchema.partial().safeParse(data);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const updateData = parsed.data;
+
   // Check ownership unless admin
   if (session.user.role !== "ADMIN") {
     const expense = await prisma.expense.findUnique({ where: { id } });
@@ -87,10 +93,10 @@ export async function updateExpense(id: string, data: Partial<CreateExpenseInput
   }
 
   try {
-    if (data.costCenterId) {
+    if (updateData.costCenterId) {
       const allowedCostCenter = await prisma.costCenter.findFirst({
         where: {
-          id: data.costCenterId,
+          id: updateData.costCenterId,
           isActive: true,
           ...(session.user.role !== "ADMIN" && {
             users: { some: { id: session.user.id } },
@@ -106,13 +112,13 @@ export async function updateExpense(id: string, data: Partial<CreateExpenseInput
     await prisma.expense.update({
       where: { id },
       data: {
-        ...(data.amount && { amount: new Prisma.Decimal(data.amount) }),
-        ...(data.date && { date: new Date(data.date) }),
-        ...(data.merchant && { merchant: data.merchant }),
-        ...(data.expenseType && { expenseType: data.expenseType }),
-        ...(data.costCenterId && { costCenterId: data.costCenterId }),
-        ...(data.notes !== undefined && { notes: data.notes }),
-        ...(data.imageUrl && { imageUrl: data.imageUrl }),
+        ...(updateData.amount && { amount: new Prisma.Decimal(updateData.amount) }),
+        ...(updateData.date && { date: new Date(updateData.date) }),
+        ...(updateData.merchant && { merchant: updateData.merchant }),
+        ...(updateData.expenseType && { expenseType: updateData.expenseType }),
+        ...(updateData.costCenterId && { costCenterId: updateData.costCenterId }),
+        ...(updateData.notes !== undefined && { notes: updateData.notes }),
+        ...(updateData.imageUrl && { imageUrl: updateData.imageUrl }),
       },
     });
 
@@ -154,7 +160,19 @@ export async function deleteExpense(id: string) {
   }
 
   try {
-    await prisma.expense.delete({ where: { id } });
+    const deletedExpense = await prisma.expense.delete({ where: { id } });
+
+    if (deletedExpense.imageUrl?.startsWith("/")) {
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+      const relativeUrl = basePath && deletedExpense.imageUrl.startsWith(basePath)
+        ? deletedExpense.imageUrl.slice(basePath.length)
+        : deletedExpense.imageUrl;
+      const publicRoot = path.resolve(process.cwd(), "public");
+      const imagePath = path.resolve(publicRoot, `.${relativeUrl}`);
+      if (imagePath.startsWith(`${publicRoot}${path.sep}`)) {
+        await fs.unlink(imagePath).catch(() => undefined);
+      }
+    }
     revalidatePath("/gastos");
     revalidatePath("/admin/gastos");
     return { success: true };

@@ -25,6 +25,7 @@ import {
   Download,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
 
 export const metadata: Metadata = { title: "Detalle del Gasto" };
 
@@ -149,11 +150,12 @@ export default async function AdminExpenseDetailPage({
           </div>
 
           {/* Edit link */}
-          <Button variant="outline" className="w-full" asChild>
-            <Link href={`/admin/gastos/${expense.id}/editar`}>
-              Editar este gasto
-            </Link>
-          </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button variant="outline" asChild>
+              <Link href={`/admin/gastos/${expense.id}/editar`}>Editar gasto</Link>
+            </Button>
+            <DeleteExpenseButton expenseId={expense.id} redirectPath="/admin/gastos" />
+          </div>
 
           {/* AI Data */}
           {expense.rawAiData && (

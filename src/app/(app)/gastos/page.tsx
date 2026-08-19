@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, formatTime, expenseTypeLabel } from "@/lib/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ImageIcon } from "lucide-react";
+import { ExportButtons } from "@/components/expenses/export-buttons";
 
 export const metadata: Metadata = { title: "Mis Gastos" };
 
@@ -40,12 +41,15 @@ export default async function MyExpensesPage({
             {total} {total === 1 ? "gasto registrado" : "gastos registrados"}
           </p>
         </div>
-        <Button asChild id="new-expense-btn">
-          <Link href="/gastos/nuevo">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Nuevo Gasto
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <ExportButtons />
+          <Button asChild id="new-expense-btn">
+            <Link href="/gastos/nuevo">
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Nuevo Gasto
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {expenses.length === 0 ? (

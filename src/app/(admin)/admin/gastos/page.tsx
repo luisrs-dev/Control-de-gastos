@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { ImageIcon, Eye, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ExportButtons } from "@/components/expenses/export-buttons";
 
 export const metadata: Metadata = { title: "Todos los Gastos" };
 
@@ -63,12 +64,15 @@ export default async function AdminExpensesPage({
             {total} {total === 1 ? "gasto" : "gastos"} encontrados
           </p>
         </div>
-        <Button asChild id="admin-new-expense-btn">
-          <Link href="/gastos/nuevo">
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Nuevo Gasto
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <ExportButtons />
+          <Button asChild id="admin-new-expense-btn">
+            <Link href="/gastos/nuevo">
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Nuevo Gasto
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
