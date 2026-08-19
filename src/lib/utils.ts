@@ -23,6 +23,16 @@ export function formatDate(date: Date | string): string {
   }).format(d);
 }
 
+export function formatTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Santiago",
+  }).format(d);
+}
+
 export function expenseTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     SUPERMARKET: "Supermercado",

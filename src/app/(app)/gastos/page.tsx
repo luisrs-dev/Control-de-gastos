@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { getUserExpenses } from "@/actions/expense.actions";
-import { formatCurrency, formatDate, expenseTypeLabel } from "@/lib/utils";
+import { formatCurrency, formatDate, formatTime, expenseTypeLabel } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ImageIcon } from "lucide-react";
@@ -92,7 +92,7 @@ export default async function MyExpensesPage({
                       </p>
                     </div>
                     <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                      {formatDate(expense.date)} · {expense.costCenter.name}
+                      {formatDate(expense.date)} · {formatTime(expense.createdAt)} · {expense.costCenter.name}
                     </p>
                     <span
                       className={`inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[expense.expenseType] ?? ""}`}
@@ -121,6 +121,9 @@ export default async function MyExpensesPage({
                   </th>
                   <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)]">
                     Fecha
+                  </th>
+                  <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)]">
+                    Hora
                   </th>
                   <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)]">
                     Tipo
@@ -165,6 +168,9 @@ export default async function MyExpensesPage({
                     </td>
                     <td className="px-5 py-3 text-[var(--muted-foreground)]">
                       {formatDate(expense.date)}
+                    </td>
+                    <td className="px-5 py-3 text-[var(--muted-foreground)] whitespace-nowrap">
+                      {formatTime(expense.createdAt)}
                     </td>
                     <td className="px-5 py-3">
                       <span

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ImageUploader } from "@/components/expenses/image-uploader";
 import { createExpense } from "@/actions/expense.actions";
+import { expenseTypeLabel } from "@/lib/utils";
 import type { CostCenter, AiExtractedData } from "@/types";
 
 const schema = z.object({
@@ -109,7 +110,12 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
             onValueChange={(v) => setValue("costCenterId", v || "", { shouldValidate: true })}
           >
             <SelectTrigger id="costCenterId" aria-describedby="costCenterId-error">
-              <SelectValue placeholder="Selecciona un centro..." />
+              <SelectValue placeholder="Selecciona un centro...">
+                {(value) =>
+                  costCenters.find((costCenter) => costCenter.id === value)?.name ??
+                  "Selecciona un centro..."
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {costCenters.map((cc) => (
@@ -195,7 +201,9 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
             }
           >
             <SelectTrigger id="expenseType">
-              <SelectValue />
+              <SelectValue>
+                {(value) => expenseTypeLabel(String(value))}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="SUPERMARKET">🛒 Supermercado</SelectItem>

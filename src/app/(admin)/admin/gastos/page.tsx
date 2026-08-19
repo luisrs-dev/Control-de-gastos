@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getAllExpenses } from "@/actions/expense.actions";
 import { getUsers, getCostCenters } from "@/actions/admin.actions";
-import { formatCurrency, formatDate, expenseTypeLabel } from "@/lib/utils";
+import { formatCurrency, formatDate, formatTime, expenseTypeLabel } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -176,7 +176,7 @@ export default async function AdminExpensesPage({
                   </p>
                 </div>
                 <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                  {formatDate(expense.date)} · {expense.costCenter.name}
+                  {formatDate(expense.date)} · {formatTime(expense.createdAt)} · {expense.costCenter.name}
                 </p>
                 <p className="text-xs text-[var(--muted-foreground)]">
                   {expense.user.name || expense.user.email}
@@ -197,6 +197,7 @@ export default async function AdminExpensesPage({
               <th className="text-left px-4 py-3 font-semibold text-[var(--muted-foreground)]">Usuario</th>
               <th className="text-left px-4 py-3 font-semibold text-[var(--muted-foreground)]">Centro</th>
               <th className="text-left px-4 py-3 font-semibold text-[var(--muted-foreground)]">Fecha</th>
+              <th className="text-left px-4 py-3 font-semibold text-[var(--muted-foreground)]">Hora</th>
               <th className="text-left px-4 py-3 font-semibold text-[var(--muted-foreground)]">Tipo</th>
               <th className="text-right px-4 py-3 font-semibold text-[var(--muted-foreground)]">Monto</th>
               <th className="text-center px-4 py-3 font-semibold text-[var(--muted-foreground)]">Acción</th>
@@ -230,6 +231,9 @@ export default async function AdminExpensesPage({
                 </td>
                 <td className="px-4 py-3 text-[var(--muted-foreground)]">
                   {formatDate(expense.date)}
+                </td>
+                <td className="px-4 py-3 text-[var(--muted-foreground)] whitespace-nowrap">
+                  {formatTime(expense.createdAt)}
                 </td>
                 <td className="px-4 py-3">
                   <span
