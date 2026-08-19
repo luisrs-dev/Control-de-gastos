@@ -43,6 +43,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, userName, userEmail }: SidebarProps) {
   const pathname = usePathname();
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const isAdmin = role === "ADMIN";
   const navItems = isAdmin ? adminNavItems : userNavItems;
 
@@ -114,7 +115,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
         </div>
         <button
           id="logout-btn"
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => signOut({ callbackUrl: `${basePath}/login` })}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--sidebar-foreground)]/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
         >
           <LogOut className="w-4 h-4" />

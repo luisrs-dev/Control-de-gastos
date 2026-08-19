@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Eye, EyeOff, Plus, Power, Users } from "lucide-react";
+import { Eye, EyeOff, Pencil, Plus, Power, Users } from "lucide-react";
 import { toast } from "sonner";
-import { createUser, toggleUserStatus } from "@/actions/admin.actions";
+import { createUser, toggleUserStatus, updateUserCostCenters } from "@/actions/admin.actions";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,16 @@ type UserRow = {
   role: "ADMIN" | "USER";
   status: "ACTIVE" | "INACTIVE";
   createdAt: Date;
+  costCenters: { id: string; name: string }[];
 };
 
 export function UsersClient({
   initialUsers,
+  availableCostCenters,
   currentUserId,
 }: {
   initialUsers: UserRow[];
+  availableCostCenters: { id: string; name: string }[];
   currentUserId: string;
 }) {
   const [users, setUsers] = useState(initialUsers);
@@ -49,20 +52,49 @@ export function UsersClient({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"ADMIN" | "USER">("USER");
+  const [selectedCostCenterIds, setSelectedCostCenterIds] = useState<string[]>([]);
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
 
   const openCreate = () => {
     setName("");
     setEmail("");
     setPassword("");
     setRole("USER");
+    setSelectedCostCenterIds([]);
+    setEditingUser(null);
     setShowPassword(false);
     setDialogOpen(true);
+  };
+
+  const openAssignments = (user: UserRow) => {
+    setEditingUser(user);
+    setSelectedCostCenterIds(user.costCenters.map((costCenter) => costCenter.id));
+    setDialogOpen(true);
+  };
+
+  const toggleCostCenter = (costCenterId: string) => {
+    setSelectedCostCenterIds((current) =>
+      current.includes(costCenterId)
+        ? current.filter((id) => id !== costCenterId)
+        : [...current, costCenterId]
+    );
   };
 
   const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
-    const result = await createUser({ name, email, password, role });
+    if (role === "USER" && selectedCostCenterIds.length === 0) {
+      toast.error("Asigna al menos un Centro de Costo.");
+      return;
+    }
+
+    const result = await createUser({
+      name,
+      email,
+      password,
+      role,
+      costCenterIds: selectedCostCenterIds,
+    });
     setLoading(false);
 
     if (result.error || !result.user) {
@@ -77,6 +109,31 @@ export function UsersClient({
     );
     setDialogOpen(false);
     toast.success("Usuario creado correctamente.");
+  };
+
+  const handleUpdateAssignments = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingUser) return;
+    if (editingUser.role === "USER" && selectedCostCenterIds.length === 0) {
+      toast.error("Asigna al menos un Centro de Costo.");
+      return;
+    }
+
+    setLoading(true);
+    const result = await updateUserCostCenters(editingUser.id, selectedCostCenterIds);
+    setLoading(false);
+    if (result.error || !result.costCenters) {
+      toast.error(result.error ?? "No se pudieron actualizar las asignaciones.");
+      return;
+    }
+
+    setUsers((current) =>
+      current.map((user) =>
+        user.id === editingUser.id ? { ...user, costCenters: result.costCenters } : user
+      )
+    );
+    setDialogOpen(false);
+    toast.success("Centros de Costo actualizados.");
   };
 
   const handleToggle = async (user: UserRow) => {
@@ -124,6 +181,7 @@ export function UsersClient({
                 <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)]">Usuario</th>
                 <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)] hidden md:table-cell">Email</th>
                 <th className="text-center px-5 py-3 font-semibold text-[var(--muted-foreground)]">Rol</th>
+                <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)]">Centros asignados</th>
                 <th className="text-center px-5 py-3 font-semibold text-[var(--muted-foreground)]">Estado</th>
                 <th className="text-left px-5 py-3 font-semibold text-[var(--muted-foreground)] hidden lg:table-cell">Creado</th>
                 <th className="text-center px-5 py-3 font-semibold text-[var(--muted-foreground)]">Acción</th>
@@ -151,6 +209,21 @@ export function UsersClient({
                       {user.role === "ADMIN" ? "Administrador" : "Usuario"}
                     </Badge>
                   </td>
+                  <td className="px-5 py-4 text-[var(--muted-foreground)]">
+                    {user.role === "ADMIN" ? (
+                      <span className="text-xs">Todos</span>
+                    ) : user.costCenters.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {user.costCenters.map((costCenter) => (
+                          <Badge key={costCenter.id} variant="secondary">
+                            {costCenter.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-amber-600">Sin asignación</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-center">
                     <Badge variant={user.status === "ACTIVE" ? "default" : "destructive"}>
                       {user.status === "ACTIVE" ? "Activo" : "Inactivo"}
@@ -160,16 +233,28 @@ export function UsersClient({
                     {formatDate(user.createdAt)}
                   </td>
                   <td className="px-5 py-4 text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={user.id === currentUserId}
-                      onClick={() => handleToggle(user)}
-                      aria-label={user.status === "ACTIVE" ? `Desactivar ${user.name}` : `Activar ${user.name}`}
-                      title={user.id === currentUserId ? "No puedes desactivar tu propia cuenta" : undefined}
-                    >
-                      <Power className="w-4 h-4" />
-                    </Button>
+                    <div className="flex justify-center gap-1">
+                      {user.role === "USER" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openAssignments(user)}
+                          aria-label={`Editar Centros de Costo de ${user.name}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={user.id === currentUserId}
+                        onClick={() => handleToggle(user)}
+                        aria-label={user.status === "ACTIVE" ? `Desactivar ${user.name}` : `Activar ${user.name}`}
+                        title={user.id === currentUserId ? "No puedes desactivar tu propia cuenta" : undefined}
+                      >
+                        <Power className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -180,24 +265,28 @@ export function UsersClient({
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent aria-labelledby="new-user-dialog-title">
-          <form onSubmit={handleCreate}>
+          <form onSubmit={editingUser ? handleUpdateAssignments : handleCreate}>
             <DialogHeader>
-              <DialogTitle id="new-user-dialog-title">Nuevo Usuario</DialogTitle>
+              <DialogTitle id="new-user-dialog-title">
+                {editingUser ? "Asignar Centros de Costo" : "Nuevo Usuario"}
+              </DialogTitle>
               <DialogDescription>
-                Crea las credenciales y define los permisos iniciales de la cuenta.
+                {editingUser
+                  ? `Selecciona los centros disponibles para ${editingUser.name ?? editingUser.email}.`
+                  : "Crea las credenciales y define los permisos iniciales de la cuenta."}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
-              <div className="space-y-1.5">
+              {!editingUser && <div className="space-y-1.5">
                 <Label htmlFor="user-name">Nombre</Label>
                 <Input id="user-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required minLength={2} />
-              </div>
-              <div className="space-y-1.5">
+              </div>}
+              {!editingUser && <div className="space-y-1.5">
                 <Label htmlFor="user-email">Email</Label>
                 <Input id="user-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
-              </div>
-              <div className="space-y-1.5">
+              </div>}
+              {!editingUser && <div className="space-y-1.5">
                 <Label htmlFor="user-password">Contraseña temporal</Label>
                 <div className="relative">
                   <Input
@@ -222,10 +311,14 @@ export function UsersClient({
                 <p className="text-xs text-[var(--muted-foreground)]">
                   Mínimo 8 caracteres, con mayúscula, minúscula y número.
                 </p>
-              </div>
-              <div className="space-y-1.5">
+              </div>}
+              {!editingUser && <div className="space-y-1.5">
                 <Label htmlFor="user-role">Rol</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as "ADMIN" | "USER")}>
+                <Select value={role} onValueChange={(value) => {
+                  const nextRole = value as "ADMIN" | "USER";
+                  setRole(nextRole);
+                  if (nextRole === "ADMIN") setSelectedCostCenterIds([]);
+                }}>
                   <SelectTrigger id="user-role" className="w-full">
                     <SelectValue>{(value) => value === "ADMIN" ? "Administrador" : "Usuario"}</SelectValue>
                   </SelectTrigger>
@@ -237,7 +330,38 @@ export function UsersClient({
                 <p className="text-xs text-[var(--muted-foreground)]">
                   Los administradores pueden gestionar usuarios, centros de costo y todos los gastos.
                 </p>
-              </div>
+              </div>}
+
+              {(editingUser || role === "USER") && (
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">
+                    Centros de Costo <span className="text-red-500">*</span>
+                  </legend>
+                  <div className="max-h-52 overflow-y-auto rounded-lg border border-[var(--border)] p-2 space-y-1">
+                    {availableCostCenters.length === 0 ? (
+                      <p className="text-sm text-[var(--muted-foreground)] p-2">
+                        No hay Centros de Costo activos disponibles.
+                      </p>
+                    ) : availableCostCenters.map((costCenter) => (
+                      <label
+                        key={costCenter.id}
+                        className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-[var(--accent)] cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedCostCenterIds.includes(costCenter.id)}
+                          onChange={() => toggleCostCenter(costCenter.id)}
+                          className="size-4 accent-[var(--primary)]"
+                        />
+                        <span className="text-sm">{costCenter.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    El usuario solamente podrá registrar gastos en los centros seleccionados.
+                  </p>
+                </fieldset>
+              )}
             </div>
 
             <DialogFooter>
@@ -245,7 +369,11 @@ export function UsersClient({
                 Cancelar
               </Button>
               <Button id="save-user-btn" type="submit" disabled={loading}>
-                {loading ? "Creando..." : "Crear Usuario"}
+                {loading
+                  ? "Guardando..."
+                  : editingUser
+                    ? "Guardar Asignaciones"
+                    : "Crear Usuario"}
               </Button>
             </DialogFooter>
           </form>

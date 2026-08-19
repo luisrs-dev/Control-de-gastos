@@ -48,6 +48,7 @@ interface NavbarProps {
 
 export function Navbar({ role, userName, userEmail, pageTitle }: NavbarProps) {
   const pathname = usePathname();
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
   const [open, setOpen] = useState(false);
   const isAdmin = role === "ADMIN";
   const navItems = isAdmin ? adminNavItems : userNavItems;
@@ -107,7 +108,7 @@ export function Navbar({ role, userName, userEmail, pageTitle }: NavbarProps) {
             <div className="px-3 pb-6 pt-4 border-t border-[var(--sidebar-border)]">
               <p className="text-white/40 text-xs px-3 mb-2 truncate">{userEmail}</p>
               <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
+                onClick={() => signOut({ callbackUrl: `${basePath}/login` })}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
               >
                 <LogOut className="w-4 h-4" />

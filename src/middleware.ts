@@ -20,14 +20,14 @@ export default auth((req) => {
   if (pathname.startsWith("/login")) {
     if (isAuthenticated) {
       const redirectTo = userRole === "ADMIN" ? "/admin" : "/dashboard";
-      return NextResponse.redirect(new URL(redirectTo, req.nextUrl));
+      return NextResponse.redirect(new URL(`${basePath}${redirectTo}`, req.nextUrl));
     }
     return NextResponse.next();
   }
 
   // All other routes require authentication
   if (!isAuthenticated) {
-    const loginUrl = new URL("/login", req.nextUrl);
+    const loginUrl = new URL(`${basePath}/login`, req.nextUrl);
     loginUrl.searchParams.set("callbackUrl", rawPathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -35,7 +35,7 @@ export default auth((req) => {
   // Admin-only routes
   if (pathname.startsWith("/admin")) {
     if (userRole !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+      return NextResponse.redirect(new URL(`${basePath}/dashboard`, req.nextUrl));
     }
   }
 

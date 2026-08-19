@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getCostCenters } from "@/actions/admin.actions";
+import { getExpenseCostCenters } from "@/actions/expense.actions";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { auth } from "@/lib/auth";
 
@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Registrar Gasto" };
 
 export default async function NewExpensePage() {
   const [costCenters, session] = await Promise.all([
-    getCostCenters(),
+    getExpenseCostCenters(),
     auth(),
   ]);
 

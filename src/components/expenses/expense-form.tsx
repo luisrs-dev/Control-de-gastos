@@ -130,6 +130,11 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
               {errors.costCenterId.message}
             </p>
           )}
+          {costCenters.length === 0 && (
+            <p className="text-amber-600 text-xs">
+              No tienes Centros de Costo asignados. Solicita la asignación a un administrador.
+            </p>
+          )}
         </div>
 
         {/* Comercio */}
@@ -231,7 +236,7 @@ export function ExpenseForm({ costCenters, redirectPath = "/gastos" }: ExpenseFo
       <Button
         id="save-expense-btn"
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || costCenters.length === 0}
         className="w-full h-12 text-base font-semibold"
       >
         {isSubmitting ? (

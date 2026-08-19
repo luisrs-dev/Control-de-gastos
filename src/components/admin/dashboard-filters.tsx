@@ -52,7 +52,14 @@ export function DashboardFilters({ costCenters }: DashboardFiltersProps) {
           </label>
           <Select value={costCenterId} onValueChange={(val) => setCostCenterId(val ?? "all")}>
             <SelectTrigger id="filter-cost-center" className="h-9">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder="Todos los centros">
+                {(value) =>
+                  value === "all"
+                    ? "Todos los centros"
+                    : costCenters.find((costCenter) => costCenter.id === value)?.name ??
+                      "Todos los centros"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los centros</SelectItem>

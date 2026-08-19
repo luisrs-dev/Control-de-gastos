@@ -31,15 +31,16 @@ enum ExpenseType {
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
-  id        String     @id @default(cuid())
-  name      String?
-  email     String     @unique
-  password  String
-  role      Role       @default(USER)
-  status    UserStatus @default(ACTIVE)
-  expenses  Expense[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String       @id @default(cuid())
+  name        String?
+  email       String       @unique
+  password    String
+  role        Role         @default(USER)
+  status      UserStatus   @default(ACTIVE)
+  expenses    Expense[]
+  costCenters CostCenter[] @relation("UserCostCenters")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("users")
 }
@@ -50,6 +51,7 @@ model CostCenter {
   description String?   @db.Text
   isActive    Boolean   @default(true)
   expenses    Expense[]
+  users       User[]    @relation("UserCostCenters")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -57,12 +59,12 @@ model CostCenter {
 }
 
 model Expense {
-  id           String      @id @default(cuid())
-  amount       Decimal     @db.Decimal(10, 2)
-  date         DateTime
-  merchant     String      @db.VarChar(255)
-  expenseType  ExpenseType @default(OTHER)
-  notes        String?     @db.Text
+  id          String      @id @default(cuid())
+  amount      Decimal     @db.Decimal(10, 2)
+  date        DateTime
+  merchant    String      @db.VarChar(255)
+  expenseType ExpenseType @default(OTHER)
+  notes       String?     @db.Text
 
   // Relations
   costCenterId String
@@ -72,7 +74,7 @@ model Expense {
 
   // File & AI
   imageUrl  String? @db.Text // URL del comprobante en Vercel Blob
-  rawAiData Json?   // Datos crudos retornados por Gemini (para auditoría)
+  rawAiData Json? // Datos crudos retornados por Gemini (para auditoría)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

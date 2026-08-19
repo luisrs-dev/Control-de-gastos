@@ -33,6 +33,21 @@ export async function createExpense(data: CreateExpenseInput) {
     parsed.data;
 
   try {
+    const allowedCostCenter = await prisma.costCenter.findFirst({
+      where: {
+        id: costCenterId,
+        isActive: true,
+        ...(session.user.role !== "ADMIN" && {
+          users: { some: { id: session.user.id } },
+        }),
+      },
+      select: { id: true },
+    });
+
+    if (!allowedCostCenter) {
+      return { error: "No tienes permiso para registrar gastos en ese Centro de Costo." };
+    }
+
     const expense = await prisma.expense.create({
       data: {
         amount: new Prisma.Decimal(amount),
@@ -72,6 +87,22 @@ export async function updateExpense(id: string, data: Partial<CreateExpenseInput
   }
 
   try {
+    if (data.costCenterId) {
+      const allowedCostCenter = await prisma.costCenter.findFirst({
+        where: {
+          id: data.costCenterId,
+          isActive: true,
+          ...(session.user.role !== "ADMIN" && {
+            users: { some: { id: session.user.id } },
+          }),
+        },
+        select: { id: true },
+      });
+      if (!allowedCostCenter) {
+        return { error: "No tienes permiso para usar ese Centro de Costo." };
+      }
+    }
+
     await prisma.expense.update({
       where: { id },
       data: {
@@ -93,6 +124,21 @@ export async function updateExpense(id: string, data: Partial<CreateExpenseInput
     console.error("Update expense error:", error);
     return { error: "Error al actualizar el gasto." };
   }
+}
+
+export async function getExpenseCostCenters() {
+  const session = await auth();
+  if (!session) return [];
+
+  return prisma.costCenter.findMany({
+    where: {
+      isActive: true,
+      ...(session.user.role !== "ADMIN" && {
+        users: { some: { id: session.user.id } },
+      }),
+    },
+    orderBy: { name: "asc" },
+  });
 }
 
 // ─── Delete Expense ───────────────────────────────────────────────────────────

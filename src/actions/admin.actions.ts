@@ -155,7 +155,15 @@ export async function getUsers() {
 
   return prisma.user.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      createdAt: true,
+      costCenters: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+    },
   });
 }
 
@@ -186,6 +194,15 @@ const createUserSchema = z.object({
     .regex(/[A-Z]/, "La contraseña debe incluir una letra mayúscula.")
     .regex(/[0-9]/, "La contraseña debe incluir un número."),
   role: z.enum(["ADMIN", "USER"], { message: "Selecciona un rol válido." }),
+  costCenterIds: z.array(z.string().min(1)).default([]),
+}).superRefine((data, context) => {
+  if (data.role === "USER" && data.costCenterIds.length === 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["costCenterIds"],
+      message: "Asigna al menos un Centro de Costo al usuario.",
+    });
+  }
 });
 
 export async function createUser(data: z.infer<typeof createUserSchema>) {
@@ -196,6 +213,16 @@ export async function createUser(data: z.infer<typeof createUserSchema>) {
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   try {
+    const costCenterIds = [...new Set(parsed.data.costCenterIds)];
+    if (parsed.data.role === "USER") {
+      const validCenters = await prisma.costCenter.count({
+        where: { id: { in: costCenterIds }, isActive: true },
+      });
+      if (validCenters !== costCenterIds.length) {
+        return { error: "Uno o más Centros de Costo no existen o están inactivos." };
+      }
+    }
+
     const bcrypt = await import("bcryptjs");
     const hashedPassword = await bcrypt.hash(parsed.data.password, 12);
     const user = await prisma.user.create({
@@ -204,8 +231,19 @@ export async function createUser(data: z.infer<typeof createUserSchema>) {
         email: parsed.data.email,
         password: hashedPassword,
         role: parsed.data.role,
+        costCenters: {
+          connect: parsed.data.role === "USER" ? costCenterIds.map((id) => ({ id })) : [],
+        },
       },
-      select: { id: true, name: true, email: true, role: true, status: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        costCenters: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+      },
     });
     revalidatePath("/admin/usuarios");
     return { success: true, user };
@@ -214,5 +252,38 @@ export async function createUser(data: z.infer<typeof createUserSchema>) {
       return { error: "Ya existe un usuario con ese email." };
     }
     return { error: "Error al crear el usuario." };
+  }
+}
+
+export async function updateUserCostCenters(userId: string, costCenterIds: string[]) {
+  const session = await auth();
+  if (!session || session.user.role !== "ADMIN") return { error: "No autorizado" };
+
+  const ids = [...new Set(costCenterIds)];
+  try {
+    const [user, validCenters] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+      prisma.costCenter.count({ where: { id: { in: ids }, isActive: true } }),
+    ]);
+
+    if (!user) return { error: "El usuario no existe." };
+    if (user.role === "USER" && ids.length === 0) {
+      return { error: "Asigna al menos un Centro de Costo al usuario." };
+    }
+    if (validCenters !== ids.length) {
+      return { error: "Uno o más Centros de Costo no existen o están inactivos." };
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { costCenters: { set: ids.map((id) => ({ id })) } },
+      select: {
+        costCenters: { select: { id: true, name: true }, orderBy: { name: "asc" } },
+      },
+    });
+    revalidatePath("/admin/usuarios");
+    return { success: true, costCenters: updatedUser.costCenters };
+  } catch {
+    return { error: "No se pudieron actualizar los Centros de Costo del usuario." };
   }
 }
