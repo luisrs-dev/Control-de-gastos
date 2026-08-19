@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <a
+        <Link
           href="/gastos/nuevo"
           id="new-expense-card"
           className="group block bg-[var(--primary)] text-white rounded-2xl p-6 shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
@@ -30,9 +31,9 @@ export default async function DashboardPage() {
           <p className="text-white/70 text-sm mt-1">
             Sube una foto de tu boleta o factura y la IA extrae los datos automáticamente.
           </p>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/gastos"
           id="my-expenses-card"
           className="group block bg-white border border-[var(--border)] rounded-2xl p-6 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all"
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
           <p className="text-[var(--muted-foreground)] text-sm mt-1">
             Consulta el historial de todos tus gastos registrados.
           </p>
-        </a>
+        </Link>
       </div>
     </div>
   );
