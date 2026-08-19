@@ -11,10 +11,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: {
     template: "%s | ControlGastos",
-    default: "ControlGastos — Gestión de Gastos por Centro de Costo",
+    default: "ControlGastos — Gestión de Gastos",
   },
   description:
-    "Sistema de gestión de gastos por centro de costo con escaneo de comprobantes con IA.",
+    "Sistema de gestión de gastos",
 };
 
 import { SessionProvider } from "@/components/providers/session-provider";

@@ -41,7 +41,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-white">ControlGastos</h1>
-            <p className="text-sm text-white/60 mt-1">Gestión de Gastos por Centro de Costo</p>
+            <p className="text-sm text-white/60 mt-1">Gestión de Gastos</p>
           </div>
 
           <LoginForm />
